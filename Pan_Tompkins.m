@@ -79,30 +79,17 @@ for i = 1:length(locs)
             if ~isempty(re_locs)
                 % 第二閾値以上のピークを判定
                 above_threshold_idx = find(re_pks >= threshold_I2);
-                if isempty(above_threshold_idx)
-                    % 第二閾値以上のピークがない場合、最大ピークを適用
-                    [max_peak, max_idx] = max(re_pks);
-                    max_loc = re_locs(max_idx) + search_start - 1;
-                    % 最大ピークを追加し、閾値を更新
-                    signal_peaks_idx = [signal_peaks_idx; max_loc];
-                    signal_pks_data = [signal_pks_data; max_peak];
-                    SPKI = 0.125 * max_peak + 0.875 * SPKI;
+                for j = above_threshold_idx'
+                    current_peak = re_pks(j);
+                    current_loc = re_locs(j) + search_start ;
+                    % 再検索されたピークを追加
+                    retrieved_peaks_idx = [retrieved_peaks_idx; current_loc];
+                    % ピークを追加し、閾値を更新
+                    signal_peaks_idx = [signal_peaks_idx; current_loc];
+                    signal_pks_data = [signal_pks_data; current_peak];
+                    SPKI = 0.125 * current_peak + 0.875 * SPKI;
                     threshold_I1 = NPKI + 0.25 * (SPKI - NPKI);
                     threshold_I2 = 0.5 * threshold_I1;
-                else
-                    % 第二閾値以上のピークがある場合、それらをすべて処理
-                    for j = above_threshold_idx'
-                        current_peak = re_pks(j);
-                        current_loc = re_locs(j) + search_start ;
-                        % 再検索されたピークを追加
-                        retrieved_peaks_idx = [retrieved_peaks_idx; current_loc];
-                        % ピークを追加し、閾値を更新
-                        signal_peaks_idx = [signal_peaks_idx; current_loc];
-                        signal_pks_data = [signal_pks_data; current_peak];
-                        SPKI = 0.125 * current_peak + 0.875 * SPKI;
-                        threshold_I1 = NPKI + 0.25 * (SPKI - NPKI);
-                        threshold_I2 = 0.5 * threshold_I1;
-                    end
                 end
             end
         end
