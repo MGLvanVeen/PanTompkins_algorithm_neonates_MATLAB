@@ -1,7 +1,7 @@
 %% Example of Using the Pan-Tompkins Function
 %% Step 1: Run the Pan-Tompkins Algorithm
 % Load the data
-data = readmatrix("sample_ecg.CSV");
+data = readmatrix("sample_data.CSV");
 fs = 500; % [Hz]
 % Run the Pan-Tompkins algorithm
 [peaks_idx, peaks_data, THRESHOLD_I1, smoothed_data] = Pan_Tompkins(fs, data, 2, 100, 1);
@@ -12,10 +12,10 @@ R_flag = zeros(1, length(smoothed_data)); % Array for flags (initialized to all 
 R_flag(peaks_idx) = 1;
 
 % Time intervals and repetitions
-interval1_Time = 30; % Duration of interval 1 [sec]
+interval1_Time = 15; % Duration of interval 1 [sec]
 interval2_Time = 10; % Duration of interval 2 [sec]
 interval3_Time = 5; % Duration of interval 3 [sec]
-num_repeats = 10; % Number of repetitions
+num_repeats = 2; % Number of repetitions
 interval1_samples = interval1_Time * fs; % Samples for interval 1
 interval2_samples = interval2_Time * fs; % Samples for interval 2
 interval3_samples = interval3_Time * fs; % Samples for interval 3

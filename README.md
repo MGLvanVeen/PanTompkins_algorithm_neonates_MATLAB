@@ -25,9 +25,9 @@ The Pan-Tompkins algorithm processes ECG signals through the following steps:
 2. **Preprocessing**:
    - **Bandpass filtering**: Removes noise and baseline wander by retaining frequencies in the range of 5-15 Hz.
    - **Differentiation filter**: Highlights the slope of QRS complexes using the differentiation filter proposed by Pan and Tompkins:
-     \[
+     $$
      H(z) = \frac{1}{8} \left( -z^{-2} - 2z^{-1} + 2z^{1} + z^{2} \right)
-     \]
+     $$
    - **Squaring**: Amplifies high-frequency components and suppresses negative amplitudes to emphasize QRS peaks.
    - **Moving average smoothing**: Extracts the signal envelope to further highlight QRS peaks and reduce noise.
 
@@ -52,12 +52,12 @@ The Pan-Tompkins algorithm processes ECG signals through the following steps:
        - `NPKI` (noise peak indicator): The mean of peaks below the 50th percentile in the learning phase.
    - **Threshold Update Equations**:
      - After every detected R-peak, the thresholds are updated as follows:
-       \[
+       $$
        THRESHOLD\_I1 = NPKI + 0.25 \cdot (SPKI - NPKI)
-       \]
-       \[
+       $$
+       $$
        THRESHOLD\_I2 = 0.5 \cdot THRESHOLD\_I1
-       \]
+       $$
      - Where:
        - `SPKI` is updated with the amplitude of detected signal peaks.
        - `NPKI` is updated with the amplitude of detected noise peaks.
