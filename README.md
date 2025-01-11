@@ -54,12 +54,15 @@ The Pan-Tompkins algorithm processes ECG signals through the following steps:
        - `NPKI` (noise peak indicator): The mean of peaks below the 50th percentile in the learning phase.
    - **Threshold Update Equations**:
      - After every detected R-peak, the thresholds are updated as follows:
+
        $$
        THRESHOLD\_I1 = NPKI + 0.25 \cdot (SPKI - NPKI)
        $$
+
        $$
        THRESHOLD\_I2 = 0.5 \cdot THRESHOLD\_I1
        $$
+       
      - Where:
        - `SPKI` is updated with the amplitude of detected signal peaks.
        - `NPKI` is updated with the amplitude of detected noise peaks.
