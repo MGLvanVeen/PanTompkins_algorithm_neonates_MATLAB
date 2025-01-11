@@ -4,7 +4,7 @@
 data = readmatrix("sample_ecg.CSV");
 fs = 500; % [Hz]
 % Run the Pan-Tompkins algorithm
-[peaks_idx, peaks_data, THRESHOLD_I1, smoothed_data] = Pan_Tompkins(fs, data, 4, 100, 1);
+[peaks_idx, peaks_data, THRESHOLD_I1, smoothed_data] = Pan_Tompkins(fs, data, 2, 100, 1);
 
 %% Step 2: Segmentation into Blocks
 R_flag = zeros(1, length(smoothed_data)); % Array for flags (initialized to all zeros)
