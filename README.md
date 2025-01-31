@@ -36,6 +36,9 @@ The Pan-Tompkins algorithm processes ECG signals through the following steps:
 3. **Peak Detection**:
    - Identifies R-peaks using adaptive thresholds.
 
+   **Note:** The initial detected R-peak data may contain false detections due to the adaptation of the threshold. It is recommended to exclude the first detected R-peak(s) when analyzing the results.
+
+
 4. **Re-search**:
    - If a QRS complex is not detected within 166% of the average RR interval, calculated from the most recent 8 detected R-peaks, the algorithm searches for the largest peak in that interval.
    - The re-search process uses a secondary threshold (`THRESHOLD I2`) to increase sensitivity while ensuring false detections are minimized.
