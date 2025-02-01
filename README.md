@@ -30,7 +30,6 @@ The `Pan_Tompkins` function returns the following outputs:
 - **smoothed_data**: Preprocessed ECG signal.
 - **THRESHOLD_I1**: Moving threshold signal (first threshold, with the second threshold being half of this).
 
-*Note*: When block processing is desired, `peaks_idx` is used to determine R-waves for a given time (fs*time) interval.
 
 ## Algorithm Details
 
