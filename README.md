@@ -57,13 +57,14 @@ The Pan-Tompkins algorithm processes ECG signals through the following steps:
    - **Threshold Update Equations**:
      - After every detected R-peak, the thresholds are updated as follows:
 
-       $$
-       \text{THRESHOLD\_I1} = \text{NPKI} + 0.25 (\text{SPKI} - \text{NPKI})
-       $$
+         $$
+         \mathrm{THRESHOLD\_I1} = \mathrm{NPKI} + 0.25\, (\mathrm{SPKI} - \mathrm{NPKI})
+         $$
 
-       $$
-       \text{THRESHOLD\_I2} = 0.5 \times \text{THRESHOLD\_I1}
-       $$
+         $$
+         \mathrm{THRESHOLD\_I2} = 0.5 \times \mathrm{THRESHOLD\_I1}
+         $$
+
 
      - Where:
        - **SPKI** is updated with the amplitude of detected signal peaks.
