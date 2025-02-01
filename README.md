@@ -16,11 +16,11 @@ A MATLAB implementation of the Pan-Tompkins algorithm for QRS detection in ECG s
 The Pan-Tompkins algorithm processes ECG signals through the following steps:
 
 1. **Input**:
-   - **Sampling frequency (`fs`)**: The frequency at which the ECG signal is sampled, specified in Hz.
-   - **Raw data (`data`)**: A matrix containing the ECG signal and possibly other data.
-   - **ECG column index (`ecg_column`)**: The column number in the raw data matrix where the ECG signal is located.
-   - **Threshold multiplier (`k`)**: A user-defined value to determine how abnormal peaks are excluded from threshold updates.
-   - **Plot flag (`plot_flag`)**: A flag to enable or disable plot output. Set to 1 for visualization or 0 to disable plotting.
+   - **Sampling frequency (fs)**: The frequency at which the ECG signal is sampled, specified in Hz.
+   - **Raw data (data)**: A matrix containing the ECG signal and possibly other data.
+   - **ECG column index (ecg_column)**: The column number in the raw data matrix where the ECG signal is located.
+   - **Threshold multiplier (k)**: A user-defined value to determine how abnormal peaks are excluded from threshold updates.
+   - **Plot flag (plot_flag)**: A flag to enable or disable plot output. Set to 1 for visualization or 0 to disable plotting.
 
 2. **Preprocessing**:
    - **Bandpass filtering**: Removes noise and baseline wander by retaining frequencies in the range of 5-15 Hz.
@@ -29,7 +29,7 @@ The Pan-Tompkins algorithm processes ECG signals through the following steps:
      $$
      H(z) = \frac{1}{8} \left( -z^{-2} - 2z^{-1} + 2z^{1} + z^{2} \right)
      $$
-     
+
    - **Squaring**: Amplifies high-frequency components and suppresses negative amplitudes to emphasize QRS peaks.
    - **Moving average smoothing**: Extracts the signal envelope to further highlight QRS peaks and reduce noise.
 
@@ -38,14 +38,13 @@ The Pan-Tompkins algorithm processes ECG signals through the following steps:
 
    **Note:** The initial detected R-peak data may contain false detections due to the adaptation of the threshold. It is recommended to exclude the first detected R-peak(s) when analyzing the results.
 
-
 4. **Re-search**:
-   - If a QRS complex is not detected within 166% of the average RR interval, calculated from the most recent 8 detected R-peaks, the algorithm searches for the largest peak in that interval.
-   - The re-search process uses a secondary threshold (`THRESHOLD I2`) to increase sensitivity while ensuring false detections are minimized.
+   - If a QRS complex is not detected within 166% of the average RR interval (calculated from the most recent 8 detected R-peaks), the algorithm searches for the largest peak in that interval.
+   - The re-search process uses a secondary threshold (THRESHOLD_I2) to increase sensitivity while ensuring false detections are minimized.
    - This step ensures robustness in detecting QRS complexes, even in cases of irregular heartbeats or missed peaks.
 
 5. **T-Wave Identification**:
-   - When an RR interval is less than 360 ms, and greater than the 200 ms latency period, the algorithm checks whether the current peak is a T-wave or a QRS complex:
+   - When an RR interval is less than 360 ms and greater than the 200 ms latency period, the algorithm checks whether the current peak is a T-wave or a QRS complex:
      - The maximum slope of the peak is compared to the maximum slope of the preceding QRS complex.
      - If the maximum slope is less than half of the preceding QRS maximum slope, it is classified as a T-wave.
      - Otherwise, it is classified as a QRS complex.
@@ -53,21 +52,22 @@ The Pan-Tompkins algorithm processes ECG signals through the following steps:
 6. **Threshold Updates**:
    - **Initial Threshold Calculation**:
      - During the learning phase (first 2 seconds of the signal), the algorithm calculates the initial thresholds:
-       - `SPKI` (signal peak indicator): The mean of peaks detected in the learning phase.
-       - `NPKI` (noise peak indicator): The mean of peaks below the 50th percentile in the learning phase.
+       - **SPKI (signal peak indicator)**: The mean of peaks detected in the learning phase.
+       - **NPKI (noise peak indicator)**: The mean of peaks below the 50th percentile in the learning phase.
    - **Threshold Update Equations**:
      - After every detected R-peak, the thresholds are updated as follows:
 
+       $$
+       \text{THRESHOLD\_I1} = \text{NPKI} + 0.25 (\text{SPKI} - \text{NPKI})
+       $$
 
-      THRESHOLD\_I1 = NPKI + 0.25 (SPKI - NPKI)
-
-      THRESHOLD\_I2 = 0.5 THRESHOLD\_I1
-
-
+       $$
+       \text{THRESHOLD\_I2} = 0.5 \times \text{THRESHOLD\_I1}
+       $$
 
      - Where:
-       - `SPKI` is updated with the amplitude of detected signal peaks.
-       - `NPKI` is updated with the amplitude of detected noise peaks.
+       - **SPKI** is updated with the amplitude of detected signal peaks.
+       - **NPKI** is updated with the amplitude of detected noise peaks.
 
 7. **Enhancements**:
    - Excludes abnormal peaks from threshold updates based on user-defined criteria.
@@ -76,12 +76,22 @@ The Pan-Tompkins algorithm processes ECG signals through the following steps:
 ## Usage
 
 To use the Pan-Tompkins algorithm:
+
 1. Prepare your ECG data as a matrix, ensuring that the column containing the ECG signal is specified using the `ecg_column` parameter.
 2. Specify the sampling frequency (`fs`), threshold multiplier (`k`), and whether to enable plots (`plot_flag`).
 3. Call the `Pan_Tompkins` function with these parameters.
-4. Inspect the results, including detected R-peaks and adaptive thresholds.
+4. Inspect the results.
 
-For detailed examples, see the **Sample Code** section.
+### Output
+
+The `Pan_Tompkins` function returns the following outputs:
+
+- **peaks_idx**: Detected R-wave indices.
+- **peaks_data**: Amplitudes (magnitudes) of the detected R-waves.
+- **smoothed_data**: Preprocessed ECG signal.
+- **THRESHOLD_I1**: Moving threshold signal (first threshold, with the second threshold being half of this).
+
+*Note*: When block processing is desired, `peaks_idx` is used to determine R-waves for a given time (fs*time) interval.
 
 ## Sample Code
 
@@ -98,7 +108,7 @@ Refer to the provided `sample_code.m` file and `sample_ecg.csv` dataset for deta
 
 ## License
 
-This project is licensed under the MIT License. You are free to use, modify, and distribute this code, provided proper attribution is given. See the `LICENSE` file in the repository for more details.
+This project is licensed under the MIT License. You are free to use, modify, and distribute this code, provided proper attribution is given. See the LICENSE file in the repository for more details.
 
 ## Author
 
