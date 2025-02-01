@@ -18,7 +18,9 @@ A MATLAB implementation of the Pan-Tompkins algorithm for QRS detection in ECG s
 - **Sampling frequency (fs)**: The frequency at which the ECG signal is sampled, specified in Hz.
 - **Raw data (data)**: A matrix containing the ECG signal and possibly other data.
 - **ECG column index (ecg_column)**: The column number in the raw data matrix where the ECG signal is located.
-- **Threshold multiplier (k)**: A user-defined value to determine how abnormal peaks are excluded from threshold updates.
+- **Threshold multiplier (k)**: A user-defined value to determine how abnormal peaks are excluded from threshold updates.  
+  Recommended values are approximately 50–100. If you do not wish to exclude abnormal peaks from threshold updates, set `k` to a very high value (e.g., around 1 million).  
+  This parameter specifies that when a peak's amplitude exceeds the current threshold by a factor of `k`, it will still be detected as a peak, but its amplitude will not be used to update the adaptive threshold.
 - **Plot flag (plot_flag)**: A flag to enable or disable plot output. Set to 1 for visualization or 0 to disable plotting.
 
 ### Output
