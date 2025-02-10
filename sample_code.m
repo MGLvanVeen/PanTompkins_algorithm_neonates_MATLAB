@@ -3,6 +3,7 @@
 % Load the data
 data = readmatrix("sample_data.CSV");
 fs = 500; % [Hz]
+data=data(3:end,:); % Exclude header information
 % Run the Pan-Tompkins algorithm
 [peaks_idx, peaks_data, THRESHOLD_I1, smoothed_data] = Pan_Tompkins(fs, data, 2, 100, 1);
 
