@@ -5,6 +5,16 @@ function [peaks_idx, peaks_data, THRESHOLD_I1, smoothed_data, clean_time] = Pan_
 % This fork (https://github.com/MGLvanVeen/PanTompkins_algorithm_neonates_MATLAB) contains minor adaptations for dataset/time handling and robustness in re-detection and T-wave logic.
 % Last update: 27-10-2025
 
+% SPDX-License-Identifier: MIT
+% Copyright (c) 2024 Tatsuo Hirata
+% Copyright (c) 2025 M. G. L. van Veen
+
+% Summary of adaptations (see README and CHANGELOG for details):
+% - Added explicit time input and clean_time output for NaN-safe alignment.  % ADAPTED
+% - Robust re-detection bounds and dynamic MinPeakDistance.                  % ADAPTED
+% - Adaptive T-wave window based on recent RR average (with fallback).       % ADAPTED
+% - Interface simplified: pass ECG vector directly (no ecg_column).          % ADAPTED
+
 % Input:
 %   fs         - Sampling frequency (Hz)
 %   data       - Raw data vector or matrix (ECG channel already selected) % ADAPTED
