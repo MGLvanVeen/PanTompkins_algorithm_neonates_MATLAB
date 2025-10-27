@@ -1,22 +1,29 @@
-function [peaks_idx, peaks_data, THRESHOLD_I1, smoothed_data] = Pan_Tompkins(fs, data, ecg_column, k, plot_flag)
+function [peaks_idx, peaks_data, THRESHOLD_I1, smoothed_data, clean_time] = Pan_Tompkins(fs, data, time, k, plot_flag) 
 % Pan_Tompkins
+
+% Adapted by MGL van Veen from: "Pan-Tompkins Algorithm Implementation in MATLAB" (https://github.com/Tatsuo5/PanTompkins_algorithm_MATLAB) by Tatsuo Hirata (MIT License)
+% This fork (https://github.com/MGLvanVeen/PanTompkins_algorithm_neonates_MATLAB) contains minor adaptations for dataset/time handling and robustness in re-detection and T-wave logic.
+% Last update: 27-10-2025
+
 % Input:
 %   fs         - Sampling frequency (Hz)
-%   data       - Raw data matrix
-%   ecg_column - Column number containing the ECG signal in the data
+%   data       - Raw data vector or matrix (ECG channel already selected) % ADAPTED
+%   time       - Time vector aligned with data (same length) % ADAPTED
 %   k          - Condition to exclude peaks from threshold update if they exceed k times the threshold
 %   plot_flag  - 1 to generate plots, 0 to not generate plots
 % Output:
-%   peaks_idx - Detected R-wave indices
-%   peaks_data - Amplitudes (magnitudes) of the detected R-waves
-%   smoothed_data - Preprocessed ECG signal
-%   THRESHOLD_I1 - Moving threshold signal (first threshold, with the second threshold being half of this)
+%   peaks_idx       - Detected R-wave indices
+%   peaks_data      - Amplitudes (magnitudes) of the detected R-waves
+%   smoothed_data   - Preprocessed ECG signal
+%   THRESHOLD_I1    - Moving threshold signal (first threshold, with the second threshold being half of this)
+%   clean_time      - Time vector after NaN removal (aligned with cleaned data) % ADAPTED
 % When block processing is desired, peaks_idx is output so that R-waves can be determined for a given time (fs*time) interval
 
 %% Data Preprocessing
-data = data(:, ecg_column); % Extract ECG data from the specified column
-data = data(isfinite(data)); % Remove NaN values
-data = data(:);
+valid_idx = isfinite(data);           % logical index of valid entries %ADAPTED build robust mask
+data = data(valid_idx);               % clean signal by removing Nan values %ADAPTED
+clean_time = time(valid_idx);         % clean time vector %ADAPTED use mask so the time vector stays aligned with the cleaned signal
+data = data(:);                       % ADAPTED ensure column vector for consistent filtering downstream
 % Apply bandpass filter
 [b, a] = butter(5, [5 / (fs / 2), 15 / (fs / 2)], 'bandpass'); % Filter coefficients
 filtered_data = filtfilt(b, a, data);
@@ -67,11 +74,14 @@ for i = 1:length(locs)
         if (locs(i) - signal_peaks_idx(end)) > 1.66 * RRaverage2
             search_start = signal_peaks_idx(end) + refractory_period;
             search_end = locs(i) - refractory_period;
-            range_length = search_end - search_start + 1; % Calculate the length of the re-detection range
-            re_locs = [];
-            if range_length > refractory_period
-                % If the re-detection range is larger than the refractory period
-                [re_pks, re_locs] = findpeaks(smoothed_data(search_start:search_end), 'MinPeakDistance', refractory_period);
+            re_locs = []; % ADAPTED
+            if search_end > search_start % ADAPTED guard against empty/negative ranges
+                range = smoothed_data(search_start:search_end); % ADAPTED slice once to avoid repeated indexing
+                x_span = search_end - search_start; % ADAPTED span for constraints
+                if length(range) > 2 && x_span > 1 % ADAPTED ensure enough samples to detect peaks and the re-detection range is larger than the refractory period
+                    mpd = min(refractory_period, x_span - 1); % ADAPTED cap MinPeakDistance to range length to prevent errors
+                    [re_pks, re_locs] = findpeaks(range, 'MinPeakDistance', mpd); % ADAPTED robust re-search even in short gaps
+                end
             end
             % Detect peaks in the re-detection range
             if ~isempty(re_locs)
@@ -83,7 +93,7 @@ for i = 1:length(locs)
                     current_loc = re_locs(j) + search_start;
                     is_t_wave = false;
                     if ~isempty(signal_peaks_idx)
-                        last_r_peak = signal_peaks_idx(end);
+                        last_r_peak = signal_peaks_idx(end); 
                         if (current_loc - last_r_peak) < round(0.36 * fs)
                             window_size = round(0.075 * fs);
                             if last_r_peak > window_size
@@ -122,7 +132,14 @@ for i = 1:length(locs)
     % T-wave identification (comparing the current peak with the previous peak)
     if ~isempty(signal_peaks_idx)
         last_r_peak = signal_peaks_idx(end); % Last detected R-wave peak
-        if (locs(i) - last_r_peak) < round(0.36 * fs)
+        RR_interval = diff(signal_peaks_idx); % ADAPTED compute RR intervals for adaptive timing window
+        if ~isempty(RR_interval) % ADAPTED if we have history, use recent mean RR
+            RRaverage = mean(RR_interval(max(1, end-7):end)); % ADAPTED average over last up-to-8 beats for stability
+        else
+            RRaverage = fs * 0.8;  % ADAPTED fallback = 800 ms at given fs to avoid edge cases
+        end
+        
+        if (locs(i) - last_r_peak) < 0.35 * RRaverage % ADAPTED to adaptive RR (heart rate aware) from fixed round (0.36*fs)
             % Compare slopes to determine T-wave
             window_size = round(0.075 * fs); % 75ms window
             % Calculate the slope of the previous peak (preventing out-of-bound errors)
@@ -179,41 +196,41 @@ peaks_data = smoothed_data(peaks_idx);
 
 %% Plot
 if plot_flag == 1
-    time = (0:length(smoothed_data) - 1) / fs; % Create time axis
+    time = (0:length(smoothed_data) - 1) / fs; % ADAPTED regenerate a uniform time axis for plotting
     figure;
-    plot(time, smoothed_data, 'b', 'DisplayName', 'Smoothed Signal'); % Plot smoothed signal
+    plot(time, smoothed_data, 'b', 'DisplayName', 'Smoothed Signal'); % Plot smoothed signal % ADAPTED plot against uniform time axis
     hold on;
     % Plot re-detected R-waves
     if ~isempty(retrieved_peaks_idx)
         valid_indices = retrieved_peaks_idx(retrieved_peaks_idx > 0 & retrieved_peaks_idx <= length(smoothed_data)); 
         retrieved_amplitudes = smoothed_data(valid_indices-1); % Adjusted for time axis (since indexing starts at 0)
-        plot((valid_indices-2) / fs, retrieved_amplitudes, 'go', 'MarkerSize', 6, 'LineWidth', 1, 'DisplayName', 'R-peaks (Re-detected)');
+        plot((valid_indices-2) / fs, retrieved_amplitudes, 'go', 'MarkerSize', 6, 'LineWidth', 1, 'DisplayName', 'R-peaks (Re-detected)'); % ADAPTED plot against uniform time axis
     end
     % Plot R-waves detected by the first threshold
     if ~isempty(peaks_idx)
         initial_peaks = setdiff(peaks_idx, retrieved_peaks_idx); % Exclude re-detected peaks
         initial_peaks = initial_peaks(initial_peaks > 0 & initial_peaks <= length(smoothed_data)); 
         if ~isempty(initial_peaks)
-            plot((initial_peaks-1) / fs, smoothed_data(initial_peaks), 'ro', 'MarkerSize', 6, 'LineWidth', 1, 'DisplayName', 'R-peaks (Initial)');
+            plot((initial_peaks-1) / fs, smoothed_data(initial_peaks), 'ro', 'MarkerSize', 6, 'LineWidth', 1, 'DisplayName', 'R-peaks (Initial)'); % ADAPTED plot against uniform time axis
         end
     end
     % Plot T-waves above the second threshold
     if ~isempty(t_wave_detected)
         valid_t_wave_times = [];
         valid_t_wave_amplitudes = [];
-        for i = 1:length(t_wave_detected)
+        for i = 1:length(t_wave_detected) 
             if t_wave_amplitudes(i) > THRESHOLD_I1(t_wave_detected(i)) / 2
                 valid_t_wave_times = [valid_t_wave_times, t_wave_detected(i)];
                 valid_t_wave_amplitudes = [valid_t_wave_amplitudes, t_wave_amplitudes(i)];
             end
         end
         if ~isempty(valid_t_wave_times)
-            plot((valid_t_wave_times-1) / fs, valid_t_wave_amplitudes, 'kx', 'MarkerSize', 8, 'LineWidth', 1.5, 'DisplayName', 'T-wave (Excluded)');
+            plot((valid_t_wave_times-1) / fs, valid_t_wave_amplitudes, 'kx', 'MarkerSize', 8, 'LineWidth', 1.5, 'DisplayName', 'T-wave (Excluded)'); % ADAPTED plot against uniform time axis
         end
     end
     % Plot thresholds
-    plot(time, THRESHOLD_I1, 'm--', 'LineWidth', 1, 'DisplayName', 'Threshold I1');
-    plot(time, THRESHOLD_I1 / 2, 'g--', 'LineWidth', 1, 'DisplayName', 'Threshold I2');
+    plot(time, THRESHOLD_I1, 'm--', 'LineWidth', 1, 'DisplayName', 'Threshold I1'); % ADAPTED plot against uniform time axis
+    plot(time, THRESHOLD_I1 / 2, 'g--', 'LineWidth', 1, 'DisplayName', 'Threshold I2'); % ADAPTED plot against uniform time axis
     title('ECG Signal with Detected R-peaks and T-wave Exclusion');
     xlabel('Time (s)');
     ylabel('Amplitude');
